@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Customizable Red Zone Simulation</title>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
+    <style>
+        #map {
+            height: 600px;
+            width: 100%;
+        }
+        #controls {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: white;
+            padding: 10px;
+            border-radius: 5px;
+            z-index: 1000;
+        }
+        .animated-circle {
+            transition: all 2s ease-out;
+        }
+        .shockwave {
+            position: absolute;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 70%);
+            border-radius: 50%;
+            width: 0;
+            height: 0;
+            animation: shockwave-animation 1s linear;
+            z-index: 1000;
+        }
+        @keyframes shockwave-animation {
+            0% {
+                transform: scale(0);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(3);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="controls">
+        <label for="radius">Radius (meters):</label>
+        <input type="number" id="radius" value="500" min="100" max="5000" step="100">
+        <br>
+        <label for="intensity">Intensity (0-1):</label>
+        <input type="number" id="intensity" value="0.5" min="0" max="1" step="0.1">
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+    <script>
+        // Initialize the map and set its view to a specific location and zoom level
+        var map = L.map('map').setView([51.505, -0.09], 13);
+
+        // Add a tile layer to the map (OpenStreetMap tiles)
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© OpenStreetMap contributors'
+        }).addTo(map);
+
+        // Function to create a zone with animation
+        function createZone(lat, lng, radius, intensity, color, delay) {
+            var circle = L.circle([lat, lng], {
+                color: color,
+                fillColor: color,
+                fillOpacity: 0, // Start with 0 opacity
+                radius: 0, // Start with 0 radius
+                className: 'animated-circle'
+            }).addTo(map);
+
+            // Use setTimeout to delay the animation
+            setTimeout(function() {
+                circle.setStyle({ fillOpacity: intensity });
+                circle.setRadius(radius);
+            }, delay);
+        }
+
+        // Function to create the shockwave animation
+        function createShockwave(lat, lng) {
+            var shockwave = document.createElement('div');
+            shockwave.classList.add('shockwave');
+            shockwave.style.left = `${lng * 100000}%`;
+            shockwave.style.top = `${lat * 100000}%`;
+            document.body.appendChild(shockwave);
+
+            // Remove the shockwave element after the animation
+            setTimeout(function() {
+                document.body.removeChild(shockwave);
+            }, 1000);
+        }
+
+        // Event listener for map clicks
+        map.on('click', function(e) {
+            var radius = document.getElementById('radius').value;
+            var intensity = document.getElementById('intensity').value;
+
+            // Create the shockwave animation
+            createShockwave(e.latlng.lat, e.latlng.lng);
+
+            // Create red zone
+            createZone(e.latlng.lat, e.latlng.lng, radius, intensity, 'red', 0);
+
+            // Create orange zone
+            createZone(e.latlng.lat, e.latlng.lng, radius * 1.5, intensity * 0.7, 'orange', 500);
+
+            // Create yellow zone
+            createZone(e.latlng.lat, e.latlng.lng, radius * 2.5, intensity * 0.5, 'yellow', 1000);
+        });
+    </script>
+</body>
+</html>
