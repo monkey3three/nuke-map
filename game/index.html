@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Customizable Red Zone Simulation</title>
+    <title>Nuke Sim 1.1</title>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css" />
@@ -50,36 +50,50 @@
         <br>
         <label for="intensity">Intensity (0-1):</label>
         <input type="number" id="intensity" value="0.5" min="0" max="1" step="0.1">
+        <br>
+        <label for="sound-toggle">Sound:</label>
+        <input type="checkbox" id="sound-toggle" checked>
     </div>
     <div id="map"></div>
     <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
     <script>
-        // Initialize the map and set its view to a specific location and zoom level
         var map = L.map('map').setView([51.505, -0.09], 13);
 
-        // Add a tile layer to the map (OpenStreetMap tiles)
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
 
-        // Function to create a zone with animation
+        var explosionSound = new Audio('explosion.wav');
+        var soundEnabled = true;
+
+        document.getElementById('sound-toggle').addEventListener('change', function() {
+            soundEnabled = this.checked;
+        });
+
+        function playExplosionSound(radius) {
+            if (soundEnabled) {
+                explosionSound.pause();
+                explosionSound.currentTime = 0;
+                explosionSound.volume = Math.min(1, radius / 5000);
+                explosionSound.play();
+            }
+        }
+
         function createZone(lat, lng, radius, intensity, color, delay) {
             var circle = L.circle([lat, lng], {
                 color: color,
                 fillColor: color,
-                fillOpacity: 0, // Start with 0 opacity
-                radius: 0, // Start with 0 radius
+                fillOpacity: 0,
+                radius: 0,
                 className: 'animated-circle'
             }).addTo(map);
 
-            // Use setTimeout to delay the animation
             setTimeout(function() {
                 circle.setStyle({ fillOpacity: intensity });
                 circle.setRadius(radius);
             }, delay);
         }
 
-        // Function to create the shockwave animation
         function createShockwave(lat, lng) {
             var shockwave = document.createElement('div');
             shockwave.classList.add('shockwave');
@@ -87,28 +101,22 @@
             shockwave.style.top = `${lat * 100000}%`;
             document.body.appendChild(shockwave);
 
-            // Remove the shockwave element after the animation
             setTimeout(function() {
                 document.body.removeChild(shockwave);
             }, 1000);
         }
 
-        // Event listener for map clicks
         map.on('click', function(e) {
             var radius = document.getElementById('radius').value;
             var intensity = document.getElementById('intensity').value;
 
-            // Create the shockwave animation
             createShockwave(e.latlng.lat, e.latlng.lng);
 
-            // Create red zone
             createZone(e.latlng.lat, e.latlng.lng, radius, intensity, 'red', 0);
-
-            // Create orange zone
             createZone(e.latlng.lat, e.latlng.lng, radius * 1.5, intensity * 0.7, 'orange', 500);
-
-            // Create yellow zone
             createZone(e.latlng.lat, e.latlng.lng, radius * 2.5, intensity * 0.5, 'yellow', 1000);
+
+            playExplosionSound(radius);
         });
     </script>
 </body>
